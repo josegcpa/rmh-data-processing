@@ -55,7 +55,8 @@ uv run nnUNetv2_predict_from_modelfolder \
     --save_probabilities
 
 echo Converting probability predictions to Nifti
-uv run python scripts/probability_to_nifti.py --input_path $SEGMENTATION_PREDICTIONS_DIR
+echo uv run python scripts/probability_to_nifti.py \
+    --input_path $SEGMENTATION_PREDICTIONS_DIR
 
 if [[ $STOP_AFTER_SEG == 1 ]]
 then
