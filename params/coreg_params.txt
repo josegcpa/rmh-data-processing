@@ -1,0 +1,45 @@
+// Components
+(Registration "MultiResolutionRegistration")
+(FixedImagePyramid "FixedRecursiveImagePyramid")
+(MovingImagePyramid "MovingRecursiveImagePyramid")
+(Interpolator "LinearInterpolator")
+(Metric "AdvancedMattesMutualInformation")
+(Optimizer "AdaptiveStochasticGradientDescent")
+(ResampleInterpolator "FinalBSplineInterpolator")
+(Resampler "DefaultResampler")
+(Transform "EulerTransform")
+
+// **********Pyramid
+(NumberOfResolutions 3)
+
+// **********Transform
+(AutomaticTransformInitializationMethod "GeometricCenter")
+(AutomaticScalesEstimation "true")
+
+// **********Optimizer 
+(MaximumNumberOfIterations 300)
+(AutomaticParameterEstimation "true")
+
+// **********Several
+(WriteTransformParametersEachIteration "false")
+(WriteTransformParametersEachResolution "false")
+(WriteIterationInfo "false")
+(WriteResultImage "true")
+(ShowExactMetricValue "false")
+(ResultImageFormat "nii")
+
+// **********ImageSampler
+(ImageSampler "RandomCoordinate")
+(CheckNumberOfSamples "false")
+(NewSamplesEveryIteration "true")
+(MaximumNumberOfSamplingAttempts 8)
+(NumberOfSpatialSamples 2048)
+(NumberOfSamplesForExactGradient 4096)
+
+// **********Interpolator and Resampler
+
+// Order of B-Spline interpolation used for applying the final deformation: 
+(FinalBSplineInterpolationOrder 3)
+
+// Default pixel value for pixels that come from outside the picture: 
+(DefaultPixelValue 0)

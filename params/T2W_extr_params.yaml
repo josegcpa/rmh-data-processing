@@ -1,0 +1,38 @@
+imageType:
+    Original:
+        binWidth: 5
+    Wavelet:
+        binWidth: 3
+    Square:
+        binWidth: 3
+    SquareRoot:
+        binWidth: 8
+    Logarithm:
+        binWidth: 16
+    Exponential:
+        binWidth: 0.5
+    Gradient:
+        binWidth: 5
+    LBP2D: 
+        binWidth: 0.1
+    LoG: {'sigma' : [1.0, 3.0]}
+
+
+featureClass:
+    firstorder:
+    glcm:
+    glrlm:
+    glszm:
+    gldm:
+    ngtdm:
+    shape:
+
+setting:
+    binWidth: 5
+    normalize: True
+    normalizeScale: 100
+    force2D: True
+    voxelArrayShift: 300
+    resampledPixelSpacing: [0.6875, 0.6875, 0]
+    geometryTolerance: 0.00001
+
