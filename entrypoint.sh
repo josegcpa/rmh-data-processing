@@ -3,6 +3,7 @@ set -e
 source .env
 
 OUT_JSON=$1
+STOP_AFTER_SEG=$2
 
 if [[ $OUT_JSON == "" ]]
 then
@@ -55,6 +56,11 @@ uv run nnUNetv2_predict_from_modelfolder \
 
 echo Converting probability predictions to Nifti
 uv run python scripts/probability_to_nifti.py --input_path $SEGMENTATION_PREDICTIONS_DIR
+
+if [[ $STOP_AFTER_SEG == 1 ]]
+then
+    exit 0
+fi
 
 echo Predicting
 uv run python scripts/get_prediction.py \
