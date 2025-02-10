@@ -4,6 +4,7 @@ source .env
 
 OUT_JSON=$1
 STOP_AFTER_SEG=$2
+SKIP_PROBA_CONVERSION=$3
 
 if [[ $OUT_JSON == "" ]]
 then
@@ -54,9 +55,14 @@ uv run nnUNetv2_predict_from_modelfolder \
     --c \
     --save_probabilities
 
-echo Converting probability predictions to Nifti
-echo uv run python scripts/probability_to_nifti.py \
-    --input_path $SEGMENTATION_PREDICTIONS_DIR
+if [[ $SKIP_PROBA_CONVERSION == 1 ]]
+then
+    echo Skipping probability conversion
+else
+    echo Converting probability predictions to Nifti
+    uv run python scripts/probability_to_nifti.py \
+        --input_path $SEGMENTATION_PREDICTIONS_DIR
+fi
 
 if [[ $STOP_AFTER_SEG == 1 ]]
 then
