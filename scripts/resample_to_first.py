@@ -8,10 +8,17 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--input_dir", type=str, required=True)
+    parser.add_argument("--series", type=str, required=True, nargs="+")
 
     args = parser.parse_args()
 
-    all_image_identifiers = []
+    all_image_identifiers = args.series
+    if len(all_image_identifiers) == 1:
+        print(
+            "Skipping resampling since only one image identifier is provided"
+        )
+        exit(0)
+    all_image_identifiers.sort()
     all_images = {}
     for image_path in Path(args.input_dir).glob("*.nii.gz"):
         image_data = image_path.stem.split("_")
@@ -20,10 +27,6 @@ if __name__ == "__main__":
         if root not in all_images:
             all_images[root] = {}
         all_images[root][image_identifier] = image_path
-        if image_identifier not in all_image_identifiers:
-            all_image_identifiers.append(image_identifier)
-
-    all_image_identifiers.sort()
 
     if len(all_image_identifiers) > 1:
         for root in all_images:
@@ -33,8 +36,6 @@ if __name__ == "__main__":
             for image_identifier in all_image_identifiers[1:]:
                 image_path = all_images[root][image_identifier]
                 moving_image = sitk.ReadImage(image_path)
-                if moving_image.GetSpacing() == target_image.GetSpacing():
-                    continue
                 moving_image = sitk.Resample(
                     moving_image,
                     target_image,
