@@ -3,6 +3,8 @@ import argparse
 import re
 import json
 import joblib
+import numpy as np
+import pandas as pd
 import mlflow
 from tqdm import tqdm
 
@@ -15,6 +17,18 @@ from radiomic_utils import (
     radiomics_extraction,
 )
 
+def to_json_serializable(x):
+    if isinstance(x, dict):
+        for k in x:
+            x[k] = to_json_serializable(x[k])
+    if isinstance(x, list):
+        x = [to_json_serializable(y) for y in x]
+    if isinstance(x, np.ndarray):
+        if x.shape == []:
+            x = float(x)
+        else:
+            x = x.tolist()
+    return x
 
 def main(config, loaded_model, preprocessing_pipeline, pdt):
     t2w_path = config["t2_series"]
@@ -30,24 +44,16 @@ def main(config, loaded_model, preprocessing_pipeline, pdt):
     dwi_mask = itk_to_sitk(transform_mask)
     adc_mask = itk_to_sitk(transform_mask)
 
-    final = radiomics_extraction(t2w, t2w_mask, dwi, dwi_mask, adc, adc_mask)
-    volume = final.loc[0, "T2W_original_shape_VoxelVolume"]
-
-    final = preprocessing_pipeline.transform(final.loc[0, :].to_frame().T)
-    y_prob = loaded_model.predict_proba(final)[:, 1][0]
-    y_pred = int((y_prob > pdt) * 1)
-
-    if y_pred == 1:
-        message = f"The model predicted aggressive cancer, with a probability of aggressiveness of {y_prob}, given a probability decision threshold of {pdt}."
-    else:
-        message = f"The model predicted non-aggressive cancer, with a probability of aggressiveness of {y_prob}, given a probability decision threshold of {pdt}."
+    rad_features = radiomics_extraction(t2w, t2w_mask, dwi, dwi_mask, adc, adc_mask)
+    volume = rad_features.loc[0, "T2W_original_shape_VoxelVolume"]
 
     return {
         "model": "1vs2345_112023",
-        "y_prob": y_prob,
-        "y_pred": y_pred,
-        "message": message,
-        "volume": volume,
+        "y_prob": None,
+        "y_pred": None,
+        "pdt": pdt,
+        "volume": float(volume),
+        "features": to_json_serializable(rad_features.to_dict()),
         "error": None,
     }
 
@@ -108,22 +114,47 @@ if __name__ == "__main__":
     pdt = float(f.readline())
 
     all_out = []
+    Path(args.output_path).mkdir(parents=True, exist_ok=True)
     for k in tqdm(data_dict):
         # potentially: change how this is done to store files individually
         # and check if they exist before running
-        try:
-            out = main(data_dict[k], loaded_model, preprocessing_pipeline, pdt)
-        except Exception as e:
-            out = {
-                "model": "1vs2345_112023",
-                "y_prob": None,
-                "y_pred": None,
-                "message": "",
-                "volume": None,
-                "error": str(e),
-            }
-        out["identifier"] = k
+        out_path = os.path.join(args.output_path, f"{k}.json")
+        if os.path.exists(out_path) is False:
+            try:
+                out = main(data_dict[k], loaded_model, preprocessing_pipeline, pdt)
+            except Exception as e:
+                out = {
+                    "model": "1vs2345_112023",
+                    "y_prob": None,
+                    "y_pred": None,
+                    "pdt": pdt,
+                    "volume": None,
+                    "features": None,
+                    "error": str(e),
+                }
+                print(f"{k} failed with error {str(e)}")
+            out["identifier"] = k
+            with open(out_path, "w") as o:
+                json.dump(out, o)
+        else:
+            with open(out_path, "r") as o:
+                out = json.load(o)
         all_out.append(out)
 
-    with open(args.output_path, "w") as f:
+    for idx in tqdm(range(len(all_out))):
+        out = all_out[idx]
+        rad_features = pd.DataFrame(out["features"])
+        if rad_features is None:
+            continue
+        elif rad_features.shape[0] == 0:
+            continue
+        final = preprocessing_pipeline.transform(rad_features)
+        print(rad_features.shape, final.shape)
+        y_prob = loaded_model.predict_proba(final)[:, 1][0]
+        y_pred = int((y_prob > pdt) * 1)
+        out["y_prob"] = y_prob
+        out["y_pred"] = y_pred
+        all_out[idx] = out
+
+    with open(os.path.join(args.output_path, "preds.json"), "w") as f:
         json.dump(all_out, f)

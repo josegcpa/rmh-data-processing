@@ -6,9 +6,8 @@ COPY pyproject.toml uv.lock .python-version /app/
 
 # Sync the project into a new environment, using the frozen lockfile
 WORKDIR /app
-RUN apt-get update && \
-    apt-get install build-essential git -y && \
-    apt-get clean
+RUN apt-get update -y && \
+    apt-get install build-essential git -y
 RUN uv sync --frozen
 
 COPY entrypoint.sh /app

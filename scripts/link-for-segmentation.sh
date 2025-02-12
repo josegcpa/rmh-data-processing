@@ -10,7 +10,7 @@ SERIES_TO_NUM[ADC]="0002"
 
 for series_type in $SEGMENTATION_SERIES
 do
-    for file in $IN_DIR/*${SERIES_TO_NUM[$series_type]}*
+    for file in $IN_DIR/*${SERIES_TO_NUM[$series_type]}.nii.gz
     do
         cp $file $OUT_DIR/$(basename $file)
     done

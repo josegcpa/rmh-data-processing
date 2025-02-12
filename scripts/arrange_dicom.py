@@ -1,7 +1,8 @@
 import errno
 from utils import retrieve_bvalue
+from tqdm import tqdm
 
-STUDY_UID_COL = "StudyInstanceUID"
+STUDY_UID_COL = "PatientID"
 SERIES_NO_COL = "SeriesNumber"
 SERIES_SELECTION = {
     "T2": "manual_sele_t2",
@@ -49,7 +50,7 @@ if __name__ == "__main__":
         study_uid = row[STUDY_UID_COL]
         series_no = row[SERIES_NO_COL]
         for k in SERIES_SELECTION:
-            if row[SERIES_SELECTION[k]] == "yes":
+            if str(row[SERIES_SELECTION[k]]) in ["yes", "1.0"]:
                 series_type = k
                 if study_uid not in all_series:
                     all_series[study_uid] = {}
@@ -58,13 +59,15 @@ if __name__ == "__main__":
                     "series_type": series_type,
                 }
 
-    for study_uid in all_series:
+    for study_uid in tqdm(all_series):
         if len(all_series[study_uid]) == len(SERIES_SELECTION):
             study_path = next(data_dir.rglob(f"{study_uid}"))
             for k in SERIES_SELECTION:
                 series_no = all_series[study_uid][k]["series_no"]
                 series_type = all_series[study_uid][k]["series_type"]
-                dicom_files = list(study_path.rglob(f"{series_no}/*dcm"))
+                dicom_files = list(study_path.rglob(f"{series_no}/DICOM/*dcm"))
+                if len(dicom_files) == 0:
+                    dicom_files = list(study_path.rglob(f"{series_no}-MR1/DICOM/*dcm"))
                 paths = [str(x) for x in dicom_files]
                 if k == "HBV":
                     all_bvalues = [int(retrieve_bvalue(x)) for x in paths]
@@ -75,6 +78,8 @@ if __name__ == "__main__":
                         for x, b in zip(paths, all_bvalues)
                         if b == max_bvalue
                     ]
+                if len(paths) > 100:
+                    continue
                 for path in paths:
                     link_path = os.path.join(
                         args.output_dir,
@@ -86,4 +91,5 @@ if __name__ == "__main__":
                     try:
                         os.symlink(path, link_path)
                     except FileExistsError:
-                        print(f"File {link_path} already exists, continuing")
+                        pass
+                        # print(f"File {link_path} already exists, continuing")

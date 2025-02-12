@@ -14,6 +14,6 @@ for series_type in $SERIES
 do
     for file in $IN_DIR/*/$series_type
     do
-        uv run dcm2niix -o $OUT_DIR -z o -9 -w 1 -f %k_${SERIES_TO_NUM[$series_type]} $file
+        uv run dcm2niix -o $OUT_DIR -z o -9 -w 0 -f %k_${SERIES_TO_NUM[$series_type]} $file
     done
 done
